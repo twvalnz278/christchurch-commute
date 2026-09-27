@@ -2,6 +2,7 @@ import { parseConfig } from "./config.js";
 import { formatText } from "./format.js";
 import { VerifiedMetroSource } from "./metro.js";
 import { buildReport } from "./report.js";
+import { parseJourneySchedule } from "./schedule.js";
 import type { Env, Origin } from "./types.js";
 
 const jsonHeaders = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
@@ -11,15 +12,16 @@ export default {
     const url = new URL(request.url);
     if (request.method !== "GET") return text("Method not allowed", 405, { allow: "GET" });
     if (url.pathname === "/health") {
+      const requiredSecretsPresent = Boolean(env.METRO_API_KEY && env.JOURNEY_CONFIG && env.JOURNEY_SCHEDULE && env.COMMUTE_TOKEN);
       return Response.json({
-        status: "not-ready",
+        status: requiredSecretsPresent ? "ready-for-live-validation" : "not-ready",
         productionReady: false,
-        gtfsStatic: "runtime uses a compact preprocessed public manifest; full GTFS remains local discovery tooling",
-        tripUpdates: "endpoint/parser validated against a production feed capture; configured journey validation pending",
-        serviceAlerts: "parser integrated as conservative blocking/high-risk/conflict gate",
-        siriEstimatedTime: "JSON envelope observed; journey payload absent in captured fixtures",
-        vehiclePositions: "endpoint identified; integration optional/TODO",
-        weather: "Open-Meteo non-commercial free endpoint integrated as walking-only risk adjustment"
+        requiredSecretsPresent,
+        scheduleFallback: "compact GTFS schedule secret with calendar/calendar_dates and pickup/drop-off restrictions",
+        tripUpdates: "fresh GTFS-Realtime overlays static trips when available; stale/missing realtime falls back conservatively",
+        serviceAlerts: "mandatory fail-closed safety gate",
+        weather: "Open-Meteo walking-only risk adjustment with conservative failure fallback",
+        siriEstimatedTime: "diagnostic only; not used for recommendations"
       }, { headers: jsonHeaders });
     }
     if (url.pathname !== "/commute") return text("Not found", 404);
@@ -35,8 +37,9 @@ export default {
 async function commute(request: Request, env: Env, origin: Origin): Promise<Response> {
   try {
     const config = parseConfig(env.JOURNEY_CONFIG);
+    const schedule = parseJourneySchedule(env.JOURNEY_SCHEDULE, config);
     if (!env.METRO_SOURCE && !env.METRO_API_KEY) throw new Error("METRO_API_KEY secret is missing");
-    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!);
+    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!, schedule);
     const report = await buildReport(config, source, origin, new Date());
     const wantsJson = request.headers.get("accept")?.includes("application/json");
     return new Response(wantsJson ? JSON.stringify(report) : formatText(report), {
@@ -49,5 +52,8 @@ async function commute(request: Request, env: Env, origin: Origin): Promise<Resp
 }
 
 function text(body: string, status: number, extraHeaders: Record<string, string> = {}): Response {
-  return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", ...extraHeaders } });
+  return new Response(body, {
+    status,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", ...extraHeaders }
+  });
 }
