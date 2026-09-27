@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [final-production-calibration]
+    branches: [main]
   pull_request:
     branches: [main]
 
