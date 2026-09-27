@@ -1,3 +1,4 @@
+import { deadlineFor, localServiceDate, weekdayBitForServiceDate } from "./deadline.js";
 import { evaluate } from "./evaluate.js";
 import type { JourneyConfig, MetroSource, Origin, Report } from "./types.js";
 import { OpenMeteoWeatherSource, type WeatherSource } from "./weather.js";
@@ -11,6 +12,16 @@ export async function buildReport(
 ): Promise<Report> {
   const option = config.options.find((candidate) => candidate.origin === origin);
   if (!option) throw new Error(`configuration for ${origin} is missing`);
+
+  const serviceDate = localServiceDate(now, config.timeZone);
+  const deadline = deadlineFor(now, config.deadlineLocal, config.timeZone);
+  const weekdayBit = weekdayBitForServiceDate(serviceDate);
+  if ((weekdayBit & (32 | 64)) !== 0) {
+    return outsideWindow(config, option.label, now, deadline, serviceDate, "Weekend: weekday commute automation is inactive.");
+  }
+  if (now.valueOf() >= deadline.valueOf()) {
+    return outsideWindow(config, option.label, now, deadline, serviceDate, "The 08:30 commute deadline has already passed.");
+  }
 
   let weatherExtra = 2;
   let weather: Report["weather"] = {
@@ -27,11 +38,43 @@ export async function buildReport(
       source: "open-meteo"
     };
   } catch {
-    // Weather must never make a journey less conservative. A failed weather lookup adds 2 minutes.
+    // Weather failure must never reduce conservatism.
   }
 
   const effectiveWalkingBuffer = config.walkingBufferMinutes + weatherExtra;
-  const observation = await source.getJourney(option, now, effectiveWalkingBuffer, config.boardingLeadMinutes);
+  const observation = await source.getJourney(
+    option,
+    now,
+    effectiveWalkingBuffer,
+    config.boardingLeadMinutes,
+    config.freshnessSeconds
+  );
   const report = evaluate({ ...config, options: [option] }, [observation], now, weatherExtra);
   return { ...report, weather };
+}
+
+function outsideWindow(
+  config: JourneyConfig,
+  label: string,
+  now: Date,
+  deadline: Date,
+  serviceDate: string,
+  reason: string
+): Report {
+  return {
+    generatedAt: now.toISOString(),
+    deadline: deadline.toISOString(),
+    localServiceDate: serviceDate,
+    status: "outside-window",
+    safeRecommendation: false,
+    headline: "Commute check outside the weekday morning window.",
+    options: [{
+      origin: config.options.find((option) => option.label === label)?.origin ?? "home",
+      label,
+      verified: false,
+      reason
+    }],
+    fallback: "No morning recommendation is required right now.",
+    notes: [reason]
+  };
 }
