@@ -1,5 +1,5 @@
 import { downloadGtfs, validateJourneyIds, type GtfsStatic } from "./gtfs/static.js";
-import { observeSiri, UnverifiedSiriParser, type SiriEstimatedTimeParser } from "./siri.js";
+import { observeTripUpdates } from "./gtfs-realtime/trip-updates.js";
 import type { JourneyObservation, JourneyOptionConfig, MetroSource } from "./types.js";
 
 export type GtfsLoader = () => Promise<GtfsStatic>;
@@ -7,21 +7,20 @@ export type GtfsLoader = () => Promise<GtfsStatic>;
 export class VerifiedMetroSource implements MetroSource {
   constructor(
     private readonly apiKey: string,
-    private readonly loadGtfs: GtfsLoader,
-    private readonly siriParser: SiriEstimatedTimeParser = new UnverifiedSiriParser()
+    private readonly loadGtfs: GtfsLoader
   ) {}
 
-  async getJourney(option: JourneyOptionConfig, now: Date): Promise<JourneyObservation> {
+  async getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number): Promise<JourneyObservation> {
     try {
       const gtfs = await this.loadGtfs();
       const errors = validateJourneyIds(gtfs, option);
       if (errors.length) return { origin: option.origin, candidates: [], error: errors.join("; ") };
-      return observeSiri(this.apiKey, option, now, this.siriParser);
+      return observeTripUpdates(this.apiKey, option, gtfs, now, walkingBufferMinutes);
     } catch (error) {
       return {
         origin: option.origin,
         candidates: [],
-        error: error instanceof Error ? error.message : "GTFS validation failed"
+        error: error instanceof Error ? error.message : "Metro realtime validation failed"
       };
     }
   }
