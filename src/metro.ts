@@ -1,5 +1,5 @@
 import { classifyAlerts } from "./alerts.js";
-import { downloadGtfs, validateJourneyIds, type GtfsStatic } from "./gtfs/static.js";
+import { downloadGtfs, resolveJourneyRouteId, validateJourneyIds, type GtfsStatic } from "./gtfs/static.js";
 import { downloadServiceAlerts } from "./gtfs-realtime/service-alerts.js";
 import { observeTripUpdates } from "./gtfs-realtime/trip-updates.js";
 import type { JourneyObservation, JourneyOptionConfig, MetroSource } from "./types.js";
@@ -15,10 +15,11 @@ export class VerifiedMetroSource implements MetroSource {
   async getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number): Promise<JourneyObservation> {
     try {
       const gtfs = await this.loadGtfs();
-      const errors = validateJourneyIds(gtfs, option);
+      const resolvedOption = { ...option, routeId: resolveJourneyRouteId(gtfs, option) };
+      const errors = validateJourneyIds(gtfs, resolvedOption);
       if (errors.length) return { origin: option.origin, candidates: [], error: errors.join("; ") };
 
-      const observation = await observeTripUpdates(this.apiKey, option, gtfs, now, walkingBufferMinutes);
+      const observation = await observeTripUpdates(this.apiKey, resolvedOption, gtfs, now, walkingBufferMinutes, boardingLeadMinutes);
       if (observation.error || observation.candidates.length === 0) return observation;
 
       const tripId = observation.candidates[0]?.sourceReference.startsWith("trip:")
@@ -26,8 +27,8 @@ export class VerifiedMetroSource implements MetroSource {
         : undefined;
       const alerts = await downloadServiceAlerts(this.apiKey);
       const classified = classifyAlerts(alerts.alerts, {
-        routeId: option.routeId,
-        stopIds: [option.boardingStopId, option.alightingStopId],
+        routeId: resolvedOption.routeId,
+        stopIds: [resolvedOption.boardingStopId, resolvedOption.alightingStopId],
         ...(tripId ? { tripId } : {}),
         nowEpochSeconds: Math.floor(now.valueOf() / 1000)
       });
