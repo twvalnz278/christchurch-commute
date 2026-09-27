@@ -11,3 +11,4 @@ data/production/
 data/diagnostics/
 data/discovery/
 *.gtfs-discovery.json
+data/private/
