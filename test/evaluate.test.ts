@@ -13,8 +13,8 @@ const config: JourneyConfig = {
   arrivalMarginMinutes: 8,
   walkingBufferMinutes: 2,
   options: [
-    { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", walkingMinutes: 5, transferCount: 0 },
-    { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", walkingMinutes: 8, transferCount: 0 }
+    { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", accessWalkingMinutes: 5, egressWalkingMinutes: 5, transferCount: 0 },
+    { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", accessWalkingMinutes: 8, egressWalkingMinutes: 8, transferCount: 0 }
   ]
 };
 
