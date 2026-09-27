@@ -20,12 +20,14 @@ export interface JourneyConfig {
   freshnessSeconds: number;
   arrivalMarginMinutes: number;
   walkingBufferMinutes: number;
+  boardingLeadMinutes: number;
   options: JourneyOptionConfig[];
 }
 
 export interface LiveJourneyCandidate {
   origin: Origin;
   observedAt: string;
+  expectedBoarding: string;
   /** Predicted live arrival at the configured alighting stop. */
   expectedArrival: string;
   source: "gtfs-rt-trip-updates" | "siri-et";
@@ -44,6 +46,8 @@ export interface EvaluatedOption {
   label: string;
   verified: boolean;
   reason: string;
+  expectedBoarding?: string;
+  leaveBy?: string;
   expectedArrival?: string;
   conservativeArrival?: string;
   marginMinutes?: number;
@@ -59,7 +63,7 @@ export interface Report {
 }
 
 export interface MetroSource {
-  getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number): Promise<JourneyObservation>;
+  getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number, boardingLeadMinutes: number): Promise<JourneyObservation>;
 }
 
 export interface Env {
