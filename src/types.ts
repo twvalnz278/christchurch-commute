@@ -8,7 +8,8 @@ export interface JourneyOptionConfig {
   originDescription: string;
   boardingStopId: string;
   alightingStopId: string;
-  walkingMinutes: number;
+  accessWalkingMinutes: number;
+  egressWalkingMinutes: number;
   transferCount: number;
 }
 
@@ -22,13 +23,12 @@ export interface JourneyConfig {
   options: JourneyOptionConfig[];
 }
 
-/** Internal boundary model, not a claim about the unverified SIRI response fields. */
 export interface LiveJourneyCandidate {
   origin: Origin;
   observedAt: string;
-  /** Live arrival at the configured alighting stop; evaluation adds the final walk. */
+  /** Predicted live arrival at the configured alighting stop. */
   expectedArrival: string;
-  source: "siri-et";
+  source: "gtfs-rt-trip-updates" | "siri-et";
   sourceReference: string;
   uncertaintyMinutes: number;
 }
@@ -59,7 +59,7 @@ export interface Report {
 }
 
 export interface MetroSource {
-  getJourney(option: JourneyOptionConfig, now: Date): Promise<JourneyObservation>;
+  getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number): Promise<JourneyObservation>;
 }
 
 export interface Env {
