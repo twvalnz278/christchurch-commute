@@ -1,6 +1,8 @@
 export const METRO_BASE_URL = "https://apis.metroinfo.co.nz";
 export const GTFS_STATIC_URL = `${METRO_BASE_URL}/rti/gtfs/v1/gtfs.zip`;
 export const SERVICE_ALERTS_URL = `${METRO_BASE_URL}/rti/gtfsrt/v1/service-alerts.pb`;
+export const TRIP_UPDATES_URL = `${METRO_BASE_URL}/rti/gtfsrt/v1/trip-updates.pb`;
+export const VEHICLE_POSITIONS_URL = `${METRO_BASE_URL}/rti/gtfsrt/v1/vehicle-positions.pb`;
 export const SIRI_ET_URL = `${METRO_BASE_URL}/rti/siri/v1/et`;
 
 export function metroHeaders(apiKey: string): Headers {

@@ -11,14 +11,16 @@ const config: JourneyConfig = {
   destination: "287 Durham Street North, Christchurch Central City, Christchurch 8013",
   freshnessSeconds: 120,
   arrivalMarginMinutes: 8,
+  walkingBufferMinutes: 2,
+  boardingLeadMinutes: 2,
   options: [
-    { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", walkingMinutes: 5, transferCount: 0 },
-    { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", walkingMinutes: 8, transferCount: 0 }
+    { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", accessWalkingMinutes: 5, egressWalkingMinutes: 5, transferCount: 0 },
+    { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", accessWalkingMinutes: 8, egressWalkingMinutes: 8, transferCount: 0 }
   ]
 };
 
 function live(origin: Origin, arrival: string, observedAt = now.toISOString(), uncertaintyMinutes = 4): JourneyObservation {
-  return { origin, candidates: [{ origin, expectedArrival: arrival, observedAt, uncertaintyMinutes, source: "siri-et", sourceReference: "synthetic-test-only" }] };
+  return { origin, candidates: [{ origin, expectedBoarding: new Date(new Date(arrival).valueOf() - 30 * 60_000).toISOString(), expectedArrival: arrival, observedAt, uncertaintyMinutes, source: "siri-et", sourceReference: "synthetic-test-only" }] };
 }
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
@@ -46,8 +48,8 @@ const tests: Array<[string, () => void]> = [
   ["adds walking, uncertainty, and safety margin", () => {
     const option = evaluate(config, [live("home", "2026-09-27T19:00:00.000Z")], now).options[0];
     assert(option, "evaluated option is missing");
-    assert(option.verified && option.marginMinutes === 17, "all conservative components must be included");
-    assert(option.conservativeArrival === "2026-09-27T19:17:00.000Z", "conservative arrival mismatch");
+    assert(option.verified && option.marginMinutes === 19, "all conservative components must be included");
+    assert(option.conservativeArrival === "2026-09-27T19:19:00.000Z", "conservative arrival mismatch");
   }],
   ["validates configured routes and stops against static GTFS", () => {
     assert(validateJourneyIds(gtfsFixture(), config.options[0]!).length === 0, "fixture IDs should validate");

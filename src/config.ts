@@ -12,6 +12,8 @@ export function parseConfig(raw: string | undefined): JourneyConfig {
   if (config.destination !== "287 Durham Street North, Christchurch Central City, Christchurch 8013") throw new Error("destination must remain fixed");
   if (!Number.isFinite(config.freshnessSeconds) || (config.freshnessSeconds ?? 0) <= 0) throw new Error("freshnessSeconds must be positive");
   if (!Number.isFinite(config.arrivalMarginMinutes) || (config.arrivalMarginMinutes ?? 0) < 0) throw new Error("arrivalMarginMinutes must be non-negative");
+  if (!Number.isFinite(config.walkingBufferMinutes) || (config.walkingBufferMinutes ?? 0) < 0) throw new Error("walkingBufferMinutes must be non-negative");
+  if (!Number.isFinite(config.boardingLeadMinutes) || (config.boardingLeadMinutes ?? 0) < 0) throw new Error("boardingLeadMinutes must be non-negative");
   if (!config.options || config.options.length !== 2) throw new Error("exactly two options are required");
   const origins = new Set<Origin>();
   for (const option of config.options) validateOption(option, origins);
@@ -30,6 +32,7 @@ function validateOption(option: JourneyOptionConfig, origins: Set<Origin>): void
   if (option.origin === "gym" && option.originDescription !== "4 Bellewood Avenue, Belfast, Christchurch") {
     throw new Error("gym origin must remain Flex Fitness Belfast's fixed address");
   }
-  if (!Number.isFinite(option.walkingMinutes) || option.walkingMinutes < 0) throw new Error("walkingMinutes must be non-negative");
+  if (!Number.isFinite(option.accessWalkingMinutes) || option.accessWalkingMinutes < 0) throw new Error("accessWalkingMinutes must be non-negative");
+  if (!Number.isFinite(option.egressWalkingMinutes) || option.egressWalkingMinutes < 0) throw new Error("egressWalkingMinutes must be non-negative");
   if (!Number.isInteger(option.transferCount) || option.transferCount < 0) throw new Error("transferCount must be a non-negative integer");
 }

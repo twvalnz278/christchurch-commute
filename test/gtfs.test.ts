@@ -1,4 +1,4 @@
-import { activeServiceIdsOnDate, parseGtfsZip } from "../src/gtfs/static.js";
+import { activeServiceIdsOnDate, parseGtfsZip, resolveJourneyRouteId } from "../src/gtfs/static.js";
 
 const encoder = new TextEncoder();
 const files: Record<string, string> = {
@@ -54,3 +54,18 @@ function crc32(bytes: Uint8Array): number {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
+
+const resolved = resolveJourneyRouteId(gtfs, {
+  origin: "home",
+  label: "fixture",
+  routeCode: "27",
+  routeId: "stale-route-id",
+  originDescription: "private",
+  boardingStopId: "a",
+  alightingStopId: "b",
+  accessWalkingMinutes: 1,
+  egressWalkingMinutes: 1,
+  transferCount: 0
+});
+if (resolved !== "r27") throw new Error("Route 27 should auto-resolve from current GTFS stops/order");
+console.log("PASS auto-resolves a changed GTFS route_id from route code and stop order");

@@ -1,6 +1,6 @@
 import { parseConfig } from "./config.js";
 import { formatText } from "./format.js";
-import { cachedGtfsLoader, VerifiedMetroSource } from "./metro.js";
+import { VerifiedMetroSource } from "./metro.js";
 import { buildReport } from "./report.js";
 import type { Env, Origin } from "./types.js";
 
@@ -14,14 +14,18 @@ export default {
       return Response.json({
         status: "not-ready",
         productionReady: false,
-        gtfsStatic: env.METRO_API_KEY ? "endpoint configured; credential present" : "endpoint configured; credential missing",
-        serviceAlerts: "parser implemented; recommendation integration pending",
-        siriEstimatedTime: "endpoint configured; response schema UNVERIFIED",
-        tripUpdates: "UNVERIFIED/TODO",
-        vehiclePositions: "UNVERIFIED/TODO"
+        gtfsStatic: "runtime uses a compact preprocessed public manifest; full GTFS remains local discovery tooling",
+        tripUpdates: "endpoint/parser validated against a production feed capture; configured journey validation pending",
+        serviceAlerts: "parser integrated as conservative blocking/high-risk/conflict gate",
+        siriEstimatedTime: "JSON envelope observed; journey payload absent in captured fixtures",
+        vehiclePositions: "endpoint identified; integration optional/TODO",
+        weather: "Open-Meteo non-commercial free endpoint integrated as walking-only risk adjustment"
       }, { headers: jsonHeaders });
     }
     if (url.pathname !== "/commute") return text("Not found", 404);
+    if (!env.COMMUTE_TOKEN) return text("Commute endpoint is not configured", 503);
+    const auth = request.headers.get("authorization");
+    if (auth !== `Bearer ${env.COMMUTE_TOKEN}`) return text("Unauthorized", 401, { "www-authenticate": "Bearer" });
     const origin = url.searchParams.get("origin");
     if (origin !== "home" && origin !== "gym") return text("origin must be home or gym", 400);
     return commute(request, env, origin);
@@ -32,7 +36,7 @@ async function commute(request: Request, env: Env, origin: Origin): Promise<Resp
   try {
     const config = parseConfig(env.JOURNEY_CONFIG);
     if (!env.METRO_SOURCE && !env.METRO_API_KEY) throw new Error("METRO_API_KEY secret is missing");
-    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!, cachedGtfsLoader(env.METRO_API_KEY!));
+    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!);
     const report = await buildReport(config, source, origin, new Date());
     const wantsJson = request.headers.get("accept")?.includes("application/json");
     return new Response(wantsJson ? JSON.stringify(report) : formatText(report), {

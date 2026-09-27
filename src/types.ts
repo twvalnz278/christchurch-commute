@@ -8,7 +8,8 @@ export interface JourneyOptionConfig {
   originDescription: string;
   boardingStopId: string;
   alightingStopId: string;
-  walkingMinutes: number;
+  accessWalkingMinutes: number;
+  egressWalkingMinutes: number;
   transferCount: number;
 }
 
@@ -18,16 +19,17 @@ export interface JourneyConfig {
   destination: "287 Durham Street North, Christchurch Central City, Christchurch 8013";
   freshnessSeconds: number;
   arrivalMarginMinutes: number;
+  walkingBufferMinutes: number;
+  boardingLeadMinutes: number;
   options: JourneyOptionConfig[];
 }
 
-/** Internal boundary model, not a claim about the unverified SIRI response fields. */
 export interface LiveJourneyCandidate {
   origin: Origin;
   observedAt: string;
-  /** Live arrival at the configured alighting stop; evaluation adds the final walk. */
+  expectedBoarding: string;
   expectedArrival: string;
-  source: "siri-et";
+  source: "gtfs-rt-trip-updates" | "siri-et";
   sourceReference: string;
   uncertaintyMinutes: number;
 }
@@ -43,6 +45,8 @@ export interface EvaluatedOption {
   label: string;
   verified: boolean;
   reason: string;
+  expectedBoarding?: string;
+  leaveBy?: string;
   expectedArrival?: string;
   conservativeArrival?: string;
   marginMinutes?: number;
@@ -55,14 +59,20 @@ export interface Report {
   headline: string;
   options: EvaluatedOption[];
   fallback: string;
+  weather?: {
+    summary: string;
+    extraWalkingMinutes: number;
+    source: "open-meteo" | "fallback";
+  };
 }
 
 export interface MetroSource {
-  getJourney(option: JourneyOptionConfig, now: Date): Promise<JourneyObservation>;
+  getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number, boardingLeadMinutes: number): Promise<JourneyObservation>;
 }
 
 export interface Env {
   METRO_API_KEY?: string;
   JOURNEY_CONFIG?: string;
+  COMMUTE_TOKEN?: string;
   METRO_SOURCE?: MetroSource;
 }

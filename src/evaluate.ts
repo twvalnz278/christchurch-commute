@@ -4,7 +4,7 @@ import type { EvaluatedOption, JourneyConfig, JourneyObservation, Report } from 
 
 const FALLBACK = "Journey unverified. Check MetroGo before leaving.";
 
-export function evaluate(config: JourneyConfig, observations: JourneyObservation[], now: Date): Report {
+export function evaluate(config: JourneyConfig, observations: JourneyObservation[], now: Date, weatherWalkingExtraMinutes = 0): Report {
   const deadline = deadlineFor(now, config.deadlineLocal, config.timeZone);
   const byId = new Map(observations.map((item) => [item.origin, item]));
   const options = config.options.map((option): EvaluatedOption => {
@@ -16,18 +16,34 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
       return fail(option.origin, option.label, "Live journey data is stale");
     }
     const arrivals = observation.candidates.map((item) => new Date(item.expectedArrival).valueOf());
-    if (arrivals.some(Number.isNaN)) return fail(option.origin, option.label, "Live arrival time is invalid");
+    const boardings = observation.candidates.map((item) => new Date(item.expectedBoarding).valueOf());
+    if (arrivals.some(Number.isNaN) || boardings.some(Number.isNaN)) return fail(option.origin, option.label, "Live journey time is invalid");
     if (Math.max(...arrivals) - Math.min(...arrivals) > 2 * 60_000) {
       return fail(option.origin, option.label, "Live sources conflict by more than two minutes");
     }
-    // Choose the latest result, then add both source uncertainty and the configured safety margin.
     const baseArrival = Math.max(...arrivals);
+    const baseBoarding = Math.min(...boardings);
     const uncertainty = Math.max(...observation.candidates.map((item) => item.uncertaintyMinutes));
-    const totalMargin = option.walkingMinutes + uncertainty + config.arrivalMarginMinutes;
+    const effectiveWalkingBuffer = config.walkingBufferMinutes + weatherWalkingExtraMinutes;
+    const finalWalk = option.egressWalkingMinutes + effectiveWalkingBuffer;
+    const totalMargin = finalWalk + uncertainty + config.arrivalMarginMinutes;
     const conservativeArrival = new Date(baseArrival + totalMargin * 60_000);
+    const leaveBy = new Date(baseBoarding - (option.accessWalkingMinutes + effectiveWalkingBuffer + config.boardingLeadMinutes) * 60_000);
+    if (leaveBy < now) {
+      return {
+        ...fail(option.origin, option.label, "The next verified bus can no longer be reached with the configured walking/boarding buffer"),
+        expectedBoarding: new Date(baseBoarding).toISOString(),
+        leaveBy: leaveBy.toISOString(),
+        expectedArrival: new Date(baseArrival).toISOString(),
+        conservativeArrival: conservativeArrival.toISOString(),
+        marginMinutes: totalMargin
+      };
+    }
     if (conservativeArrival > deadline) {
       return {
         ...fail(option.origin, option.label, "Conservative arrival misses the 08:30 hard deadline"),
+        expectedBoarding: new Date(baseBoarding).toISOString(),
+        leaveBy: leaveBy.toISOString(),
         expectedArrival: new Date(baseArrival).toISOString(),
         conservativeArrival: conservativeArrival.toISOString(),
         marginMinutes: totalMargin
@@ -37,7 +53,9 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
       origin: option.origin,
       label: option.label,
       verified: true,
-      reason: `Live data passes freshness and deadline checks with ${option.walkingMinutes} walking minutes plus a ${uncertainty + config.arrivalMarginMinutes}-minute uncertainty/safety margin`,
+      reason: `Live data passes catchability, freshness, service-alert and deadline checks. Access walk ${option.accessWalkingMinutes}m + ${effectiveWalkingBuffer}m walking buffer (personal + weather) + ${config.boardingLeadMinutes}m stop lead; final walk ${option.egressWalkingMinutes}m + ${effectiveWalkingBuffer}m walking buffer.`,
+      expectedBoarding: new Date(baseBoarding).toISOString(),
+      leaveBy: leaveBy.toISOString(),
       expectedArrival: new Date(baseArrival).toISOString(),
       conservativeArrival: conservativeArrival.toISOString(),
       marginMinutes: totalMargin
@@ -46,7 +64,9 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
   const safe = options.filter((option) => option.verified).sort((a, b) => {
     const aConfig = config.options.find((item) => item.origin === a.origin)!;
     const bConfig = config.options.find((item) => item.origin === b.origin)!;
-    return aConfig.transferCount - bConfig.transferCount || aConfig.walkingMinutes - bConfig.walkingMinutes;
+    return aConfig.transferCount - bConfig.transferCount ||
+      new Date(b.leaveBy!).valueOf() - new Date(a.leaveBy!).valueOf() ||
+      aConfig.accessWalkingMinutes - bConfig.accessWalkingMinutes;
   });
   return {
     generatedAt: now.toISOString(),
