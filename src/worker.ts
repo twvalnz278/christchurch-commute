@@ -23,6 +23,9 @@ export default {
       }, { headers: jsonHeaders });
     }
     if (url.pathname !== "/commute") return text("Not found", 404);
+    if (!env.COMMUTE_TOKEN) return text("Commute endpoint is not configured", 503);
+    const auth = request.headers.get("authorization");
+    if (auth !== `Bearer ${env.COMMUTE_TOKEN}`) return text("Unauthorized", 401, { "www-authenticate": "Bearer" });
     const origin = url.searchParams.get("origin");
     if (origin !== "home" && origin !== "gym") return text("origin must be home or gym", 400);
     return commute(request, env, origin);
