@@ -1,0 +1,13 @@
+dist/
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+journey-config.json
+*.private.json
+data/production/
+data/diagnostics/
+data/discovery/
+*.gtfs-discovery.json
