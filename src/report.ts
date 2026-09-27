@@ -17,10 +17,10 @@ export async function buildReport(
   const deadline = deadlineFor(now, config.deadlineLocal, config.timeZone);
   const weekdayBit = weekdayBitForServiceDate(serviceDate);
   if ((weekdayBit & (32 | 64)) !== 0) {
-    return outsideWindow(config, option.origin, option.label, now, deadline, serviceDate, "Weekend: weekday commute automation is inactive.");
+    return outsideWindow(option.origin, option.label, now, deadline, serviceDate, "Weekend: weekday commute automation is inactive.");
   }
   if (now.valueOf() >= deadline.valueOf()) {
-    return outsideWindow(config, option.origin, option.label, now, deadline, serviceDate, "The 08:30 commute deadline has already passed.");
+    return outsideWindow(option.origin, option.label, now, deadline, serviceDate, "The 08:30 commute deadline has already passed.");
   }
 
   let weatherExtra = 2;
@@ -54,7 +54,6 @@ export async function buildReport(
 }
 
 function outsideWindow(
-  config: JourneyConfig,
   origin: Origin,
   label: string,
   now: Date,
