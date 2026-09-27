@@ -20,10 +20,11 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
     if (Math.max(...arrivals) - Math.min(...arrivals) > 2 * 60_000) {
       return fail(option.origin, option.label, "Live sources conflict by more than two minutes");
     }
-    // Choose the latest result, then add both source uncertainty and the configured safety margin.
+    // Choose the latest result, then add measured walking, the user's walking-speed buffer,
+    // source uncertainty, and the configured safety margin.
     const baseArrival = Math.max(...arrivals);
     const uncertainty = Math.max(...observation.candidates.map((item) => item.uncertaintyMinutes));
-    const totalMargin = option.walkingMinutes + uncertainty + config.arrivalMarginMinutes;
+    const totalMargin = option.walkingMinutes + config.walkingBufferMinutes + uncertainty + config.arrivalMarginMinutes;
     const conservativeArrival = new Date(baseArrival + totalMargin * 60_000);
     if (conservativeArrival > deadline) {
       return {
@@ -37,7 +38,7 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
       origin: option.origin,
       label: option.label,
       verified: true,
-      reason: `Live data passes freshness and deadline checks with ${option.walkingMinutes} walking minutes plus a ${uncertainty + config.arrivalMarginMinutes}-minute uncertainty/safety margin`,
+      reason: `Live data passes freshness and deadline checks with ${option.walkingMinutes} measured walking minutes plus a ${config.walkingBufferMinutes}-minute walking-speed buffer and a ${uncertainty + config.arrivalMarginMinutes}-minute uncertainty/safety margin`,
       expectedArrival: new Date(baseArrival).toISOString(),
       conservativeArrival: conservativeArrival.toISOString(),
       marginMinutes: totalMargin
