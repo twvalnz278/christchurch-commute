@@ -28,7 +28,6 @@ export interface LiveJourneyCandidate {
   origin: Origin;
   observedAt: string;
   expectedBoarding: string;
-  /** Predicted live arrival at the configured alighting stop. */
   expectedArrival: string;
   source: "gtfs-rt-trip-updates" | "siri-et";
   sourceReference: string;
@@ -60,6 +59,11 @@ export interface Report {
   headline: string;
   options: EvaluatedOption[];
   fallback: string;
+  weather?: {
+    summary: string;
+    extraWalkingMinutes: number;
+    source: "open-meteo" | "fallback";
+  };
 }
 
 export interface MetroSource {
