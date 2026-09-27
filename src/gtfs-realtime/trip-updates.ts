@@ -34,7 +34,8 @@ export async function observeTripUpdates(
   option: JourneyOptionConfig,
   gtfs: GtfsStatic,
   now: Date,
-  walkingBufferMinutes: number
+  walkingBufferMinutes: number,
+  boardingLeadMinutes: number
 ): Promise<JourneyObservation> {
   try {
     const feed = await downloadTripUpdates(apiKey);
@@ -42,7 +43,7 @@ export async function observeTripUpdates(
     if (!observedSeconds) return { origin: option.origin, candidates: [], error: "GTFS-Realtime feed timestamp is missing" };
     const observedAt = new Date(observedSeconds * 1000);
     const validTrips = validTripIds(gtfs, option);
-    const readyAt = now.valueOf() + (option.accessWalkingMinutes + walkingBufferMinutes) * 60_000;
+    const readyAt = now.valueOf() + (option.accessWalkingMinutes + walkingBufferMinutes + boardingLeadMinutes) * 60_000;
     const candidates: LiveJourneyCandidate[] = [];
 
     for (const update of feed.tripUpdates) {
@@ -60,6 +61,7 @@ export async function observeTripUpdates(
       candidates.push({
         origin: option.origin,
         observedAt: observedAt.toISOString(),
+        expectedBoarding: new Date(boardTime * 1000).toISOString(),
         expectedArrival: new Date(alightTime * 1000).toISOString(),
         source: "gtfs-rt-trip-updates",
         sourceReference: `trip:${update.tripId}`,
