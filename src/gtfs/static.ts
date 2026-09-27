@@ -35,6 +35,33 @@ export async function parseGtfsZip(bytes: Uint8Array): Promise<GtfsStatic> {
   };
 }
 
+export function resolveJourneyRouteId(gtfs: GtfsStatic, option: JourneyOptionConfig): string {
+  const configured = gtfs.routes.find((row) => row.route_id === option.routeId && row.route_short_name === option.routeCode);
+  if (configured?.route_id && routeServesJourneyInOrder(gtfs, configured.route_id, option.boardingStopId, option.alightingStopId)) {
+    return configured.route_id;
+  }
+
+  const candidates = gtfs.routes
+    .filter((row) => row.route_short_name === option.routeCode && row.route_id)
+    .map((row) => row.route_id)
+    .filter((routeId) => routeServesJourneyInOrder(gtfs, routeId, option.boardingStopId, option.alightingStopId));
+
+  const unique = [...new Set(candidates)];
+  if (unique.length === 1) return unique[0]!;
+  if (unique.length === 0) throw new Error(`current GTFS has no Route ${option.routeCode} variant serving the configured stops in journey order`);
+  throw new Error(`current GTFS has multiple Route ${option.routeCode} variants serving the configured stops; route resolution is ambiguous`);
+}
+
+function routeServesJourneyInOrder(gtfs: GtfsStatic, routeId: string, boardingStopId: string, alightingStopId: string): boolean {
+  const tripIds = gtfs.trips.filter((row) => row.route_id === routeId).map((row) => row.trip_id).filter(Boolean);
+  return tripIds.some((tripId) => {
+    const times = gtfs.stopTimes.filter((row) => row.trip_id === tripId);
+    const board = Number(times.find((row) => row.stop_id === boardingStopId)?.stop_sequence);
+    const alight = Number(times.find((row) => row.stop_id === alightingStopId)?.stop_sequence);
+    return Number.isFinite(board) && Number.isFinite(alight) && board < alight;
+  });
+}
+
 export function validateJourneyIds(gtfs: GtfsStatic, option: JourneyOptionConfig): string[] {
   const errors: string[] = [];
   const route = gtfs.routes.find((row) => row.route_id === option.routeId);
