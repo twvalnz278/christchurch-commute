@@ -23,7 +23,7 @@ export class OpenMeteoWeatherSource implements WeatherSource {
     url.searchParams.set("forecast_days", "1");
 
     const response = await fetch(url.toString(), {
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(10_000)
     });
     if (!response.ok) throw new Error(`Open-Meteo request failed with HTTP ${response.status}`);
