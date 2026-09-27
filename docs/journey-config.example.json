@@ -14,7 +14,8 @@
       "originDescription": "PRIVATE_HOME_LOCATION_SET_IN_SECRET_ONLY",
       "boardingStopId": "CONFIRM_WITH_METRO",
       "alightingStopId": "CONFIRM_WITH_METRO",
-      "walkingMinutes": 0,
+      "accessWalkingMinutes": 0,
+      "egressWalkingMinutes": 0,
       "transferCount": 0
     },
     {
@@ -25,7 +26,8 @@
       "originDescription": "4 Bellewood Avenue, Belfast, Christchurch",
       "boardingStopId": "CONFIRM_WITH_METRO",
       "alightingStopId": "CONFIRM_WITH_METRO",
-      "walkingMinutes": 0,
+      "accessWalkingMinutes": 0,
+      "egressWalkingMinutes": 0,
       "transferCount": 0
     }
   ]
