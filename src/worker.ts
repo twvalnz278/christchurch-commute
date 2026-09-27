@@ -1,6 +1,6 @@
 import { parseConfig } from "./config.js";
 import { formatText } from "./format.js";
-import { cachedGtfsLoader, VerifiedMetroSource } from "./metro.js";
+import { VerifiedMetroSource } from "./metro.js";
 import { buildReport } from "./report.js";
 import type { Env, Origin } from "./types.js";
 
@@ -14,7 +14,7 @@ export default {
       return Response.json({
         status: "not-ready",
         productionReady: false,
-        gtfsStatic: env.METRO_API_KEY ? "endpoint configured; credential present" : "endpoint configured; credential missing",
+        gtfsStatic: "runtime uses a compact preprocessed public manifest; full GTFS remains local discovery tooling",
         tripUpdates: "endpoint/parser validated against a production feed capture; configured journey validation pending",
         serviceAlerts: "parser integrated as conservative blocking/high-risk/conflict gate",
         siriEstimatedTime: "JSON envelope observed; journey payload absent in captured fixtures",
@@ -36,7 +36,7 @@ async function commute(request: Request, env: Env, origin: Origin): Promise<Resp
   try {
     const config = parseConfig(env.JOURNEY_CONFIG);
     if (!env.METRO_SOURCE && !env.METRO_API_KEY) throw new Error("METRO_API_KEY secret is missing");
-    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!, cachedGtfsLoader(env.METRO_API_KEY!));
+    const source = env.METRO_SOURCE ?? new VerifiedMetroSource(env.METRO_API_KEY!);
     const report = await buildReport(config, source, origin, new Date());
     const wantsJson = request.headers.get("accept")?.includes("application/json");
     return new Response(wantsJson ? JSON.stringify(report) : formatText(report), {
