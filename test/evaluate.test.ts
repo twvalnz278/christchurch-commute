@@ -12,6 +12,7 @@ const config: JourneyConfig = {
   freshnessSeconds: 120,
   arrivalMarginMinutes: 8,
   walkingBufferMinutes: 2,
+  boardingLeadMinutes: 2,
   options: [
     { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", accessWalkingMinutes: 5, egressWalkingMinutes: 5, transferCount: 0 },
     { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", accessWalkingMinutes: 8, egressWalkingMinutes: 8, transferCount: 0 }
@@ -19,7 +20,7 @@ const config: JourneyConfig = {
 };
 
 function live(origin: Origin, arrival: string, observedAt = now.toISOString(), uncertaintyMinutes = 4): JourneyObservation {
-  return { origin, candidates: [{ origin, expectedArrival: arrival, observedAt, uncertaintyMinutes, source: "siri-et", sourceReference: "synthetic-test-only" }] };
+  return { origin, candidates: [{ origin, expectedBoarding: new Date(new Date(arrival).valueOf() - 30 * 60_000).toISOString(), expectedArrival: arrival, observedAt, uncertaintyMinutes, source: "siri-et", sourceReference: "synthetic-test-only" }] };
 }
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
