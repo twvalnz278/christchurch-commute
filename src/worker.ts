@@ -42,8 +42,9 @@ async function commute(request: Request, env: Env, origin: Origin): Promise<Resp
     return new Response(wantsJson ? JSON.stringify(report) : formatText(report), {
       headers: wantsJson ? jsonHeaders : { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
     });
-  } catch {
-    return text("Journey unverified. Configuration or live data is unavailable; check MetroGo.", 503);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "unknown runtime error";
+    return text(`Journey unverified. ${reason}; check MetroGo.`, 503);
   }
 }
 
