@@ -12,7 +12,7 @@
       "label": "Home → Route 27",
       "routeCode": "27",
       "routeId": "27_4175_6_3",
-      "originDescription": "PRIVATE_HOME_LOCATION_SET_IN_SECRET_ONLY",
+      "originDescription": "Private home (address intentionally not stored)",
       "boardingStopId": "PRIVATE_HOME_BOARDING_STOP_SET_IN_SECRET_ONLY",
       "alightingStopId": "53074",
       "accessWalkingMinutes": 0,
