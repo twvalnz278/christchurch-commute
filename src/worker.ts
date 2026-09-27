@@ -16,7 +16,7 @@ export default {
         productionReady: false,
         gtfsStatic: env.METRO_API_KEY ? "endpoint configured; credential present" : "endpoint configured; credential missing",
         tripUpdates: "endpoint/parser validated against a production feed capture; configured journey validation pending",
-        serviceAlerts: "parser implemented; recommendation integration pending",
+        serviceAlerts: "parser integrated as conservative blocking/high-risk/conflict gate",
         siriEstimatedTime: "JSON envelope observed; journey payload absent in captured fixtures",
         vehiclePositions: "endpoint identified; integration optional/TODO"
       }, { headers: jsonHeaders });
