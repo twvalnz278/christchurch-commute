@@ -18,7 +18,8 @@ export default {
         tripUpdates: "endpoint/parser validated against a production feed capture; configured journey validation pending",
         serviceAlerts: "parser integrated as conservative blocking/high-risk/conflict gate",
         siriEstimatedTime: "JSON envelope observed; journey payload absent in captured fixtures",
-        vehiclePositions: "endpoint identified; integration optional/TODO"
+        vehiclePositions: "endpoint identified; integration optional/TODO",
+        weather: "Open-Meteo non-commercial free endpoint integrated as walking-only risk adjustment"
       }, { headers: jsonHeaders });
     }
     if (url.pathname !== "/commute") return text("Not found", 404);
