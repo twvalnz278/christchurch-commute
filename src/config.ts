@@ -31,6 +31,7 @@ function validateOption(option: JourneyOptionConfig, origins: Set<Origin>): void
   if (option.origin === "gym" && option.originDescription !== "4 Bellewood Avenue, Belfast, Christchurch") {
     throw new Error("gym origin must remain Flex Fitness Belfast's fixed address");
   }
-  if (!Number.isFinite(option.walkingMinutes) || option.walkingMinutes < 0) throw new Error("walkingMinutes must be non-negative");
+  if (!Number.isFinite(option.accessWalkingMinutes) || option.accessWalkingMinutes < 0) throw new Error("accessWalkingMinutes must be non-negative");
+  if (!Number.isFinite(option.egressWalkingMinutes) || option.egressWalkingMinutes < 0) throw new Error("egressWalkingMinutes must be non-negative");
   if (!Number.isInteger(option.transferCount) || option.transferCount < 0) throw new Error("transferCount must be a non-negative integer");
 }
