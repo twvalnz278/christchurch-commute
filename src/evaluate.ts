@@ -4,7 +4,7 @@ import type { EvaluatedOption, JourneyConfig, JourneyObservation, Report } from 
 
 const FALLBACK = "Journey unverified. Check MetroGo before leaving.";
 
-export function evaluate(config: JourneyConfig, observations: JourneyObservation[], now: Date): Report {
+export function evaluate(config: JourneyConfig, observations: JourneyObservation[], now: Date, weatherWalkingExtraMinutes = 0): Report {
   const deadline = deadlineFor(now, config.deadlineLocal, config.timeZone);
   const byId = new Map(observations.map((item) => [item.origin, item]));
   const options = config.options.map((option): EvaluatedOption => {
@@ -24,10 +24,11 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
     const baseArrival = Math.max(...arrivals);
     const baseBoarding = Math.min(...boardings);
     const uncertainty = Math.max(...observation.candidates.map((item) => item.uncertaintyMinutes));
-    const finalWalk = option.egressWalkingMinutes + config.walkingBufferMinutes;
+    const effectiveWalkingBuffer = config.walkingBufferMinutes + weatherWalkingExtraMinutes;
+    const finalWalk = option.egressWalkingMinutes + effectiveWalkingBuffer;
     const totalMargin = finalWalk + uncertainty + config.arrivalMarginMinutes;
     const conservativeArrival = new Date(baseArrival + totalMargin * 60_000);
-    const leaveBy = new Date(baseBoarding - (option.accessWalkingMinutes + config.walkingBufferMinutes + config.boardingLeadMinutes) * 60_000);
+    const leaveBy = new Date(baseBoarding - (option.accessWalkingMinutes + effectiveWalkingBuffer + config.boardingLeadMinutes) * 60_000);
     if (leaveBy < now) {
       return {
         ...fail(option.origin, option.label, "The next verified bus can no longer be reached with the configured walking/boarding buffer"),
@@ -52,7 +53,7 @@ export function evaluate(config: JourneyConfig, observations: JourneyObservation
       origin: option.origin,
       label: option.label,
       verified: true,
-      reason: `Live data passes catchability, freshness, service-alert and deadline checks. Access walk ${option.accessWalkingMinutes}m + ${config.walkingBufferMinutes}m personal walking buffer + ${config.boardingLeadMinutes}m stop lead; final walk ${option.egressWalkingMinutes}m + ${config.walkingBufferMinutes}m personal walking buffer.`,
+      reason: `Live data passes catchability, freshness, service-alert and deadline checks. Access walk ${option.accessWalkingMinutes}m + ${effectiveWalkingBuffer}m walking buffer (personal + weather) + ${config.boardingLeadMinutes}m stop lead; final walk ${option.egressWalkingMinutes}m + ${effectiveWalkingBuffer}m walking buffer.`,
       expectedBoarding: new Date(baseBoarding).toISOString(),
       leaveBy: leaveBy.toISOString(),
       expectedArrival: new Date(baseArrival).toISOString(),
