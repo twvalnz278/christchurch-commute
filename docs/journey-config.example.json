@@ -5,29 +5,30 @@
   "freshnessSeconds": 120,
   "arrivalMarginMinutes": 10,
   "walkingBufferMinutes": 2,
+  "boardingLeadMinutes": 2,
   "options": [
     {
       "origin": "home",
       "label": "Home → Route 27",
       "routeCode": "27",
-      "routeId": "CONFIRM_WITH_CURRENT_GTFS",
+      "routeId": "27_4175_6_3",
       "originDescription": "PRIVATE_HOME_LOCATION_SET_IN_SECRET_ONLY",
-      "boardingStopId": "CONFIRM_WITH_METRO",
-      "alightingStopId": "CONFIRM_WITH_METRO",
+      "boardingStopId": "PRIVATE_HOME_BOARDING_STOP_SET_IN_SECRET_ONLY",
+      "alightingStopId": "53074",
       "accessWalkingMinutes": 0,
-      "egressWalkingMinutes": 0,
+      "egressWalkingMinutes": 9,
       "transferCount": 0
     },
     {
       "origin": "gym",
       "label": "Flex Fitness Belfast → Route 1",
       "routeCode": "1",
-      "routeId": "CONFIRM_WITH_CURRENT_GTFS",
+      "routeId": "1_0854_6_3",
       "originDescription": "4 Bellewood Avenue, Belfast, Christchurch",
-      "boardingStopId": "CONFIRM_WITH_METRO",
-      "alightingStopId": "CONFIRM_WITH_METRO",
-      "accessWalkingMinutes": 0,
-      "egressWalkingMinutes": 0,
+      "boardingStopId": "15357",
+      "alightingStopId": "53074",
+      "accessWalkingMinutes": 4,
+      "egressWalkingMinutes": 9,
       "transferCount": 0
     }
   ]
