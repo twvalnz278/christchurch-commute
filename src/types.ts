@@ -18,6 +18,7 @@ export interface JourneyConfig {
   destination: "287 Durham Street North, Christchurch Central City, Christchurch 8013";
   freshnessSeconds: number;
   arrivalMarginMinutes: number;
+  walkingBufferMinutes: number;
   options: JourneyOptionConfig[];
 }
 
