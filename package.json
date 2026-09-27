@@ -8,7 +8,7 @@
     "format:check": "node scripts/check-format.mjs",
     "lint": "tsc -p tsconfig.json --noEmit --noUnusedLocals --noUnusedParameters",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node dist/test/alerts.test.js && node dist/test/evaluate.test.js && node dist/test/gtfs.test.js && node dist/test/trip-updates.test.js && node dist/test/siri.test.js && node dist/test/weather.test.js && node dist/test/worker.test.js",
+    "test": "npm run build && node dist/test/alerts.test.js && node dist/test/evaluate.test.js && node dist/test/gtfs.test.js && node dist/test/schedule.test.js && node dist/test/trip-updates.test.js && node dist/test/siri.test.js && node dist/test/weather.test.js && node dist/test/report.test.js && node dist/test/worker.test.js",
     "gtfs:fetch": "npm run build && node scripts/fetch-gtfs.mjs",
     "gtfs:discover": "npm run build && node scripts/discover-gtfs.mjs",
     "siri:diagnose": "npm run build && node scripts/fetch-siri-diagnostic.mjs",
