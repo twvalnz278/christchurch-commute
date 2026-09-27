@@ -58,7 +58,7 @@ function buildOption(option) {
 
     // Keep only morning trips that could possibly satisfy the 08:30 hard deadline.
     if (boardSeconds < 4 * 3600 || boardSeconds > 8.5 * 3600 || alightSeconds > 8.5 * 3600) continue;
-    if (!trip.trip_id || !trip.service_id) continue;
+    if (!trip.trip_id || !trip.service_id || !serviceCanRunWeekday(trip.service_id)) continue;
     servicesNeeded.add(trip.service_id);
     usable.push({
       tripId: trip.trip_id,
@@ -100,6 +100,17 @@ function routeCandidates(option) {
     .map((route) => route.route_id);
   if (ids.length === 0) fail(`No current GTFS route has route_short_name ${option.routeCode}.`);
   return ids;
+}
+
+function serviceCanRunWeekday(serviceId) {
+  const calendar = (gtfs.calendar ?? []).find((row) => row.service_id === serviceId);
+  if (calendar && ["monday","tuesday","wednesday","thursday","friday"].some((day) => calendar[day] === "1")) return true;
+  return (gtfs.calendarDates ?? []).some((row) => {
+    if (row.service_id !== serviceId || row.exception_type !== "1" || !/^\d{8}$/u.test(row.date ?? "")) return false;
+    const date = row.date;
+    const day = new Date(Date.UTC(Number(date.slice(0,4)), Number(date.slice(4,6)) - 1, Number(date.slice(6,8)))).getUTCDay();
+    return day >= 1 && day <= 5;
+  });
 }
 
 function buildService(serviceId) {
