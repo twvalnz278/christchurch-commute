@@ -11,6 +11,7 @@ const config: JourneyConfig = {
   destination: "287 Durham Street North, Christchurch Central City, Christchurch 8013",
   freshnessSeconds: 120,
   arrivalMarginMinutes: 8,
+  walkingBufferMinutes: 2,
   options: [
     { origin: "home", label: "Home → Route 27", routeCode: "27", routeId: "route-27-fixture", originDescription: "private", boardingStopId: "stop-a", alightingStopId: "stop-b", walkingMinutes: 5, transferCount: 0 },
     { origin: "gym", label: "Flex Fitness Belfast → Route 1", routeCode: "1", routeId: "route-1-fixture", originDescription: "4 Bellewood Avenue, Belfast, Christchurch", boardingStopId: "stop-c", alightingStopId: "stop-d", walkingMinutes: 8, transferCount: 0 }
@@ -46,8 +47,8 @@ const tests: Array<[string, () => void]> = [
   ["adds walking, uncertainty, and safety margin", () => {
     const option = evaluate(config, [live("home", "2026-09-27T19:00:00.000Z")], now).options[0];
     assert(option, "evaluated option is missing");
-    assert(option.verified && option.marginMinutes === 17, "all conservative components must be included");
-    assert(option.conservativeArrival === "2026-09-27T19:17:00.000Z", "conservative arrival mismatch");
+    assert(option.verified && option.marginMinutes === 19, "all conservative components must be included");
+    assert(option.conservativeArrival === "2026-09-27T19:19:00.000Z", "conservative arrival mismatch");
   }],
   ["validates configured routes and stops against static GTFS", () => {
     assert(validateJourneyIds(gtfsFixture(), config.options[0]!).length === 0, "fixture IDs should validate");
