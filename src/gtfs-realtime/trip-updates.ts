@@ -167,7 +167,7 @@ function parseStopTimeEvent(reader: ProtoReader): StopTimeEvent {
   const result: StopTimeEvent = {};
   while (!reader.done) {
     const [field, wire] = reader.tag();
-    if (field === 1 && wire === 0) result.delay = reader.int32();
+    if (field === 1 && wire === 0) reader.uint(); // delay is not used; absolute event time is authoritative here
     else if (field === 2 && wire === 0) result.time = reader.uint();
     else if (field === 3 && wire === 0) result.uncertainty = reader.int32();
     else reader.skip(wire);
@@ -216,10 +216,6 @@ class ProtoReader {
       multiplier *= 128;
     }
     throw new Error("invalid protobuf varint");
-  }
-  int32(): number {
-    const value = this.uint();
-    return value > 0x7fffffff ? value - 0x100000000 : value;
   }
   string(): string { return new TextDecoder("utf-8", { fatal: true }).decode(this.bytesForLength()); }
   message(): ProtoReader { return new ProtoReader(this.bytesForLength()); }
