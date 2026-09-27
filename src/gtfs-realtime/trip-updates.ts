@@ -1,5 +1,5 @@
 import { TRIP_UPDATES_URL, checkedFetch } from "../http.js";
-import type { GtfsStatic } from "../gtfs/static.js";
+import type { RouteManifest } from "../route-manifest.js";
 import type { JourneyObservation, JourneyOptionConfig, LiveJourneyCandidate } from "../types.js";
 
 interface FeedHeader { version: string; timestamp?: number }
@@ -32,7 +32,7 @@ export async function downloadTripUpdates(apiKey: string): Promise<TripUpdatesFe
 export async function observeTripUpdates(
   apiKey: string,
   option: JourneyOptionConfig,
-  gtfs: GtfsStatic,
+  manifest: RouteManifest,
   now: Date,
   walkingBufferMinutes: number,
   boardingLeadMinutes: number
@@ -42,13 +42,12 @@ export async function observeTripUpdates(
     const observedSeconds = feed.header.timestamp;
     if (!observedSeconds) return { origin: option.origin, candidates: [], error: "GTFS-Realtime feed timestamp is missing" };
     const observedAt = new Date(observedSeconds * 1000);
-    const validTrips = validTripIds(gtfs, option);
     const readyAt = now.valueOf() + (option.accessWalkingMinutes + walkingBufferMinutes + boardingLeadMinutes) * 60_000;
     const candidates: LiveJourneyCandidate[] = [];
 
     for (const update of feed.tripUpdates) {
-      if (!update.tripId || !validTrips.has(update.tripId)) continue;
-      if (update.routeId && update.routeId !== option.routeId) continue;
+      if (!update.tripId || !manifest.allowedTripIds.has(update.tripId)) continue;
+      if (update.routeId && update.routeId !== manifest.routeId) continue;
       const board = update.stopTimeUpdates.find((item) => item.stopId === option.boardingStopId);
       const alight = update.stopTimeUpdates.find((item) => item.stopId === option.alightingStopId);
       if (!board || !alight) continue;
@@ -179,19 +178,6 @@ function parseStopTimeEvent(reader: ProtoReader): StopTimeEvent {
 
 function eventTime(event: StopTimeEvent | undefined): number | undefined {
   return event?.time;
-}
-
-function validTripIds(gtfs: GtfsStatic, option: JourneyOptionConfig): Set<string> {
-  const routeTrips = gtfs.trips.filter((row) => row.route_id === option.routeId);
-  const ids = new Set<string>();
-  for (const trip of routeTrips) {
-    if (!trip.trip_id) continue;
-    const stops = gtfs.stopTimes.filter((row) => row.trip_id === trip.trip_id);
-    const board = Number(stops.find((row) => row.stop_id === option.boardingStopId)?.stop_sequence);
-    const alight = Number(stops.find((row) => row.stop_id === option.alightingStopId)?.stop_sequence);
-    if (Number.isFinite(board) && Number.isFinite(alight) && board < alight) ids.add(trip.trip_id);
-  }
-  return ids;
 }
 
 class ProtoReader {
