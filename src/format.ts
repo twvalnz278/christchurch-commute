@@ -2,6 +2,7 @@ import type { Report } from "./types.js";
 
 export function formatText(report: Report): string {
   const lines = [report.headline, `Hard deadline: ${report.deadline}`];
+  if (report.weather) lines.push(`Weather: ${report.weather.summary}`);
   for (const option of report.options) {
     lines.push(`${option.verified ? "VERIFIED" : "UNVERIFIED"} — ${option.label}: ${option.reason}`);
     if (option.leaveBy) lines.push(`Leave origin by: ${option.leaveBy}`);
