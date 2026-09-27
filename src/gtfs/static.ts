@@ -42,8 +42,9 @@ export function resolveJourneyRouteId(gtfs: GtfsStatic, option: JourneyOptionCon
   }
 
   const candidates = gtfs.routes
-    .filter((row) => row.route_short_name === option.routeCode && row.route_id)
+    .filter((row) => row.route_short_name === option.routeCode)
     .map((row) => row.route_id)
+    .filter((routeId): routeId is string => Boolean(routeId))
     .filter((routeId) => routeServesJourneyInOrder(gtfs, routeId, option.boardingStopId, option.alightingStopId));
 
   const unique = [...new Set(candidates)];
