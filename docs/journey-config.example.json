@@ -4,6 +4,7 @@
   "destination": "287 Durham Street North, Christchurch Central City, Christchurch 8013",
   "freshnessSeconds": 120,
   "arrivalMarginMinutes": 10,
+  "walkingBufferMinutes": 2,
   "options": [
     {
       "origin": "home",
