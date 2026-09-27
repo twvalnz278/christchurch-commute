@@ -15,9 +15,11 @@ for (const url of ["https://worker.invalid/commute", "https://worker.invalid/com
 }
 console.log("PASS /commute requires home or gym origin");
 
-const unauthorized = await worker.fetch(new Request("https://worker.invalid/commute?origin=home"), authEnv);
-if (unauthorized.status !== 401) throw new Error("commute endpoint must require bearer auth");
-console.log("PASS /commute requires bearer auth");
+for (const path of ["/commute?origin=home", "/validate"]) {
+  const unauthorized = await worker.fetch(new Request(`https://worker.invalid${path}`), authEnv);
+  if (unauthorized.status !== 401) throw new Error(`${path} must require bearer auth`);
+}
+console.log("PASS /commute and /validate require bearer auth");
 
 const unavailable = await worker.fetch(
   new Request("https://worker.invalid/commute?origin=home", { headers: { authorization: "Bearer fixture-token" } }),
