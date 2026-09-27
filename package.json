@@ -13,7 +13,8 @@
     "gtfs:discover": "npm run build && node scripts/discover-gtfs.mjs",
     "siri:diagnose": "npm run build && node scripts/fetch-siri-diagnostic.mjs",
     "worker:check": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
-    "gtfsrt:diagnose": "npm run build && node scripts/fetch-trip-updates-diagnostic.mjs"
+    "gtfsrt:diagnose": "npm run build && node scripts/fetch-trip-updates-diagnostic.mjs",
+    "gtfs:manifest": "node scripts/generate-route-manifest.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2",
