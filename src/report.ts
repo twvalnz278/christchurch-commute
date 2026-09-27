@@ -17,10 +17,10 @@ export async function buildReport(
   const deadline = deadlineFor(now, config.deadlineLocal, config.timeZone);
   const weekdayBit = weekdayBitForServiceDate(serviceDate);
   if ((weekdayBit & (32 | 64)) !== 0) {
-    return outsideWindow(config, option.label, now, deadline, serviceDate, "Weekend: weekday commute automation is inactive.");
+    return outsideWindow(config, option.origin, option.label, now, deadline, serviceDate, "Weekend: weekday commute automation is inactive.");
   }
   if (now.valueOf() >= deadline.valueOf()) {
-    return outsideWindow(config, option.label, now, deadline, serviceDate, "The 08:30 commute deadline has already passed.");
+    return outsideWindow(config, option.origin, option.label, now, deadline, serviceDate, "The 08:30 commute deadline has already passed.");
   }
 
   let weatherExtra = 2;
@@ -55,6 +55,7 @@ export async function buildReport(
 
 function outsideWindow(
   config: JourneyConfig,
+  origin: Origin,
   label: string,
   now: Date,
   deadline: Date,
@@ -69,7 +70,7 @@ function outsideWindow(
     safeRecommendation: false,
     headline: "Commute check outside the weekday morning window.",
     options: [{
-      origin: config.options.find((option) => option.label === label)?.origin ?? "home",
+      origin,
       label,
       verified: false,
       reason
