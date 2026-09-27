@@ -169,7 +169,7 @@ function parseStopTimeEvent(reader: ProtoReader): StopTimeEvent {
     const [field, wire] = reader.tag();
     if (field === 1 && wire === 0) reader.uint(); // delay is not used; absolute event time is authoritative here
     else if (field === 2 && wire === 0) result.time = reader.uint();
-    else if (field === 3 && wire === 0) result.uncertainty = reader.int32();
+    else if (field === 3 && wire === 0) result.uncertainty = reader.uint();
     else reader.skip(wire);
   }
   return result;
