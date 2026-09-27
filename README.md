@@ -1,79 +1,138 @@
 # Christchurch commute assistant
 
-Safety-first Cloudflare Worker for an iPhone morning commute notification. The hard requirement is arrival at **287 Durham Street North, Christchurch Central City by 08:30 Pacific/Auckland**.
+Safety-first Cloudflare Worker for a weekday iPhone commute notification to **287 Durham Street North, Christchurch Central City**, with a hard **08:30 Pacific/Auckland** arrival deadline.
 
-The two supported zero-transfer journeys are:
+Supported zero-transfer journeys:
 
 - Home → Metro Route 27 toward Huntsbury / city.
 - Flex Fitness Belfast, 4 Bellewood Avenue → Metro Route 1 toward Cashmere / city.
 
-The private home street address is deliberately **not stored in this repository or required by the Worker**. The production secret only needs the confirmed boarding stop and measured access-walk baseline.
+The private home street address is never stored in this repository. Production only needs the public Metro boarding stop plus a measured walking baseline inside Cloudflare secrets.
 
-## Current data path
+## Final decision model
 
-1. Metro GTFS Static validates current routes, stops, trips, stop order and service structure.
-2. Metro GTFS-Realtime Trip Updates supplies predicted boarding/alighting times.
-3. Static GTFS trip IDs are used to match realtime records; the captured Metro Trip Updates feed can omit `route_id`.
-4. Metro GTFS-Realtime Service Alerts are a conservative safety gate. Relevant BLOCK, HIGH_RISK or ambiguous CONFLICT alerts prevent a verified recommendation.
-5. Open-Meteo changes walking risk only. It never changes the Metro bus ETA.
-6. The evaluator checks whether the bus is still physically catchable, calculates a local leave-by time, adds final walking and safety margins, and enforces the hard 08:30 deadline.
-7. Any missing, stale, contradictory or unsafe condition fails closed to MetroGo.
+The Worker no longer depends on a bus already being visible in GTFS-Realtime at 07:00.
 
-SIRI Estimated Time remains available only as a diagnostic. Production captures returned a valid JSON envelope but no usable journey payload, so the recommendation engine does not depend on it.
+1. A compact `JOURNEY_SCHEDULE` secret is generated locally from Metro's official GTFS Static feed.
+2. The generator selects only trips that actually serve the configured boarding and alighting stops in order.
+3. It honours GTFS `pickup_type` / `drop_off_type`, so trips that pass a stop without allowing boarding are excluded. This is important for Route 1 express services.
+4. GTFS `calendar.txt` and `calendar_dates.txt` determine whether a trip is active on the local service date.
+5. Fresh GTFS-Realtime Trip Updates overlay the static candidate when available.
+6. Missing or stale realtime does **not** imply "on time"; it leaves the trip at conservative confidence C using the static schedule.
+7. Realtime cancellation/deletion/replacement or a skipped configured stop removes the affected trip.
+8. Metro Service Alerts are mandatory. If alerts cannot be checked, the recommendation fails closed.
+9. Open-Meteo can only increase walking risk buffers. Weather never changes the Metro bus ETA.
+10. All remaining trips are evaluated independently; the Worker chooses the **latest leave-by time** that still meets the conservative 08:30 deadline.
 
-## Walking and safety model
+## Confidence levels
 
-Walking is split into two legs:
+- **A** — fresh realtime prediction available at both configured stops.
+- **B** — fresh realtime is partial; one target time still relies on the static schedule.
+- **C** — official GTFS Static fallback only.
+
+Omitted GTFS-Realtime uncertainty is treated as unknown rather than zero. Static fallback carries its own uncertainty allowance.
+
+## Walking calibration
+
+Walking is split into:
 
 - `accessWalkingMinutes`: origin → boarding stop.
 - `egressWalkingMinutes`: alighting stop → work.
 
-A configurable personal `walkingBufferMinutes` is added to **each** walking leg. The intended production value is 2 minutes because the user walks more slowly than the map baseline.
+The production model adds the user's personal **+2 minute walking buffer to each walking leg**. Weather can add a further 0–6 minutes to each walking leg. A separate `boardingLeadMinutes` requires arrival at the stop before the predicted bus.
 
-A separate `boardingLeadMinutes` requires arrival at the stop before the predicted bus. Weather can only increase walking buffers. If weather lookup fails, a conservative fallback walking increment is applied.
+Current conservative calibration in the example:
 
-The text response is formatted in `Pacific/Auckland`, while JSON timestamps remain ISO timestamps.
+- Home access baseline: 14 minutes.
+- Gym access baseline: 8 minutes.
+- Manchester St Super Stop → work baseline: 12 minutes.
+- Personal walking buffer: +2 minutes per walking leg.
+- Boarding lead: 2 minutes.
+- Additional arrival safety margin: 10 minutes.
 
-## Current public stop configuration
+These baselines are deliberately conservative; changing them changes the latest-safe leave time and should be done only after measuring the same walking route repeatedly.
 
-`docs/journey-config.example.json` contains only public/non-sensitive configuration and placeholders. Current public values include:
+## Why Manchester St Super Stop
 
-- Route 27 Huntsbury-bound route hint: `27_4175_6_3`.
-- Route 1 southbound route hint: `1_0854_6_3`.
-- Common CBD alighting candidate: `53074` (Manchester St Super Stop).
-- Gym boarding candidate: `15357` (Main North Rd near Belfast Rd).
+The configured CBD alighting stop is public stop `53074` (Manchester St Super Stop). It is served by both selected southbound routes in the validated GTFS sequence and avoids a transfer. The final walking baseline remains conservative rather than relying on a daily routing API.
 
-GTFS route IDs can change between timetable versions. The Worker therefore treats the configured route ID as a hint: if it no longer exists, it attempts to resolve the unique current route variant using route short name plus boarding/alighting stop order. Ambiguous or missing matches fail closed.
+## Required secrets
 
-The real home boarding stop and access-walk baseline belong only in the Cloudflare `JOURNEY_CONFIG` secret, never in tracked files.
+Production requires exactly four Worker secrets:
 
-## Verified Metro interfaces
+- `METRO_API_KEY`
+- `JOURNEY_CONFIG`
+- `JOURNEY_SCHEDULE`
+- `COMMUTE_TOKEN`
 
-Authenticated Metro calls use `Ocp-Apim-Subscription-Key` from the `METRO_API_KEY` Worker secret:
+`wrangler.toml` declares all four as required, so a deployment must fail if one is missing. Secret values are never committed.
 
-- GTFS Static: `GET https://apis.metroinfo.co.nz/rti/gtfs/v1/gtfs.zip`
-- GTFS-Realtime Trip Updates: `GET https://apis.metroinfo.co.nz/rti/gtfsrt/v1/trip-updates.pb`
-- GTFS-Realtime Service Alerts: `GET https://apis.metroinfo.co.nz/rti/gtfsrt/v1/service-alerts.pb`
-- GTFS-Realtime Vehicle Positions: endpoint identified but not required for V1.
-- SIRI Estimated Time: diagnostic only.
+## Generate the private schedule
 
-A real Trip Updates capture was validated without committing the raw production payload. Synthetic parser tests remain in the repository.
+The schedule is regenerated from official GTFS whenever Metro publishes a timetable change.
 
-## API surface and privacy
+1. Put the private configuration at:
+   `data/private/journey-config.private.json`
+2. Download current GTFS:
+   `npm.cmd run gtfs:fetch`
+3. Generate the compact schedule:
+   `npm.cmd run journey:schedule`
 
-- `GET /health` — readiness metadata only; does not expose secrets or private configuration.
+The output is:
+
+`data/private/journey-schedule.private.json`
+
+The generator:
+
+- never copies the private home address;
+- selects the exact configured stop pair;
+- rejects no-pickup/no-drop-off trips;
+- includes only weekday-capable morning services;
+- includes service-calendar exceptions;
+- refuses output above Cloudflare's 5 KB variable limit.
+
+Upload it without placing its value in shell history:
+
+```powershell
+Get-Content .\data\private\journey-schedule.private.json -Raw | npx.cmd wrangler secret put JOURNEY_SCHEDULE
+```
+
+## Runtime endpoints
+
+Public:
+
+- `GET /health` — readiness metadata only; no secret values.
+
+Bearer-authenticated:
+
 - `GET /commute?origin=home`
 - `GET /commute?origin=gym`
+- `GET /validate` — validates config/schedule plus live Metro Trip Updates and Service Alerts without making a commute recommendation.
 
-The commute endpoint requires:
+Authorization:
 
 `Authorization: Bearer <COMMUTE_TOKEN>`
 
-Responses use `Cache-Control: no-store`. The token, Metro key and private journey JSON are Cloudflare secrets and must never be committed, pasted into issue/PR text, or placed in command arguments.
+All responses use `Cache-Control: no-store`.
+
+## Weekday behavior
+
+Weekend requests and requests after the local 08:30 deadline return `status: "outside-window"` and do not make Metro/weather calls for a morning recommendation.
+
+At weekday commute time the Worker:
+
+1. resolves the current local service date;
+2. builds catchable static GTFS candidates;
+3. overlays fresh realtime where available;
+4. applies cancellations/skipped stops and mandatory Service Alerts;
+5. applies walking, weather, uncertainty and safety margins;
+6. picks the latest safe leave-by time.
+
+If no trip can be verified conservatively, the user is told to check MetroGo.
 
 ## Local checks
 
-On Windows PowerShell in this project use `npm.cmd` / `npx.cmd` because the PowerShell execution policy may block the `.ps1` npm shim.
+Windows PowerShell:
 
 ```powershell
 npm.cmd install
@@ -84,22 +143,32 @@ npm.cmd test
 npm.cmd run worker:check
 ```
 
-Production captures and discovery files under `data/` are ignored by Git.
+Use `npm.cmd` / `npx.cmd` on machines where PowerShell blocks the npm `.ps1` shim.
 
-## Deployment gate
+## Deployment
 
-Do not call this production-ready until all of the following pass:
+```powershell
+npx.cmd wrangler secret list
+npx.cmd wrangler deploy
+```
 
-1. Full local build/lint/test/Worker dry-run on the PR branch.
-2. Current GTFS confirms the configured home/gym boarding and CBD alighting journey order.
-3. A live Trip Updates check confirms both configured journeys can be matched.
-4. Cloudflare's current free/no-card constraints are rechecked.
-5. `METRO_API_KEY`, `JOURNEY_CONFIG`, and `COMMUTE_TOKEN` are stored as Worker secrets.
-6. Authenticated Worker responses are tested without exposing secrets.
-7. iPhone Shortcuts retries/rechecks and MetroGo fallback are configured and tested.
+The Worker is configured for `workers.dev` and disables preview URLs. Wrangler is pinned in `package.json` so a future CLI release cannot silently alter the deployment path.
 
-## Intended iPhone flow
+## iPhone automation
 
-The iPhone Personal Automation calls the authenticated Worker at about 07:00 on weekdays, retries if the request fails, and displays the returned local leave-by time and conservative work-arrival time. Later pre-departure rechecks notify only if the recommendation materially worsens.
+The intended Personal Automation:
 
-A positive result is never reused from cache. If live data cannot verify a safe journey, the notification tells the user to check MetroGo.
+- 07:00 weekday authenticated request.
+- Retry at 07:05 and 07:10 if the request fails.
+- Silent rechecks around 07:25 and 07:35.
+- Notify again only when the leave-by time materially worsens or the trip becomes unverified.
+- Never reuse a previous positive response.
+- Open MetroGo when `safeRecommendation !== true`.
+
+The Shortcut should store the Bearer token locally and send it in the `Authorization` header, never in the URL.
+
+## Cost and privacy
+
+The architecture is designed for Cloudflare Workers Free and very low request volume. It uses no paid mapping service, no VPS, no trial dependency, and no credit-card-only service.
+
+Private address, Metro API key, commute token and private journey files must never be committed, pasted into GitHub issues/PRs, or written to Worker logs.

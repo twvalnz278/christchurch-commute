@@ -13,10 +13,10 @@
       "routeCode": "27",
       "routeId": "27_4175_6_3",
       "originDescription": "Private home (address intentionally not stored)",
-      "boardingStopId": "PRIVATE_HOME_BOARDING_STOP_SET_IN_SECRET_ONLY",
+      "boardingStopId": "SET_ONLY_IN_PRIVATE_CONFIG",
       "alightingStopId": "53074",
-      "accessWalkingMinutes": 0,
-      "egressWalkingMinutes": 9,
+      "accessWalkingMinutes": 14,
+      "egressWalkingMinutes": 12,
       "transferCount": 0
     },
     {
@@ -27,8 +27,8 @@
       "originDescription": "4 Bellewood Avenue, Belfast, Christchurch",
       "boardingStopId": "15357",
       "alightingStopId": "53074",
-      "accessWalkingMinutes": 4,
-      "egressWalkingMinutes": 9,
+      "accessWalkingMinutes": 8,
+      "egressWalkingMinutes": 12,
       "transferCount": 0
     }
   ]

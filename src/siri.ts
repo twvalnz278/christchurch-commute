@@ -1,12 +1,12 @@
 import { SIRI_ET_URL, checkedFetch } from "./http.js";
-import type { JourneyObservation, JourneyOptionConfig, LiveJourneyCandidate } from "./types.js";
+import type { JourneyCandidate, JourneyObservation, JourneyOptionConfig } from "./types.js";
 
 export interface SiriEstimatedTimeParser {
-  parse(payload: Uint8Array, option: JourneyOptionConfig, now: Date): LiveJourneyCandidate[];
+  parse(payload: Uint8Array, option: JourneyOptionConfig, now: Date): JourneyCandidate[];
 }
 
 export class UnverifiedSiriParser implements SiriEstimatedTimeParser {
-  parse(): LiveJourneyCandidate[] {
+  parse(): JourneyCandidate[] {
     throw new Error("SIRI Estimated Time response schema remains unverified; no live arrival can be derived safely");
   }
 }

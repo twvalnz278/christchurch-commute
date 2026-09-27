@@ -1,4 +1,6 @@
 export type Origin = "home" | "gym";
+export type Confidence = "A" | "B" | "C";
+export type JourneySource = "gtfs-rt-trip-updates" | "gtfs-static";
 
 export interface JourneyOptionConfig {
   origin: Origin;
@@ -24,20 +26,24 @@ export interface JourneyConfig {
   options: JourneyOptionConfig[];
 }
 
-export interface LiveJourneyCandidate {
+export interface JourneyCandidate {
   origin: Origin;
-  observedAt: string;
+  tripId: string;
   expectedBoarding: string;
   expectedArrival: string;
-  source: "gtfs-rt-trip-updates" | "siri-et";
+  source: JourneySource;
   sourceReference: string;
+  confidence: Confidence;
   uncertaintyMinutes: number;
+  observedAt?: string;
+  note?: string;
 }
 
 export interface JourneyObservation {
   origin: Origin;
-  candidates: LiveJourneyCandidate[];
+  candidates: JourneyCandidate[];
   error?: string;
+  notes?: string[];
 }
 
 export interface EvaluatedOption {
@@ -45,16 +51,22 @@ export interface EvaluatedOption {
   label: string;
   verified: boolean;
   reason: string;
+  tripId?: string;
+  confidence?: Confidence;
+  source?: JourneySource;
   expectedBoarding?: string;
   leaveBy?: string;
   expectedArrival?: string;
   conservativeArrival?: string;
   marginMinutes?: number;
+  note?: string;
 }
 
 export interface Report {
   generatedAt: string;
   deadline: string;
+  localServiceDate: string;
+  status: "ok" | "unverified" | "outside-window";
   safeRecommendation: boolean;
   headline: string;
   options: EvaluatedOption[];
@@ -64,15 +76,23 @@ export interface Report {
     extraWalkingMinutes: number;
     source: "open-meteo" | "fallback";
   };
+  notes?: string[];
 }
 
 export interface MetroSource {
-  getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number, boardingLeadMinutes: number): Promise<JourneyObservation>;
+  getJourney(
+    option: JourneyOptionConfig,
+    now: Date,
+    walkingBufferMinutes: number,
+    boardingLeadMinutes: number,
+    freshnessSeconds: number
+  ): Promise<JourneyObservation>;
 }
 
 export interface Env {
   METRO_API_KEY?: string;
   JOURNEY_CONFIG?: string;
+  JOURNEY_SCHEDULE?: string;
   COMMUTE_TOKEN?: string;
   METRO_SOURCE?: MetroSource;
 }

@@ -1,5 +1,8 @@
 name = "christchurch-commute"
 main = "src/worker.ts"
 compatibility_date = "2026-09-27"
+workers_dev = true
+preview_urls = false
 
-# Secrets are deliberately absent. Add them with `wrangler secret put`, never here.
+[secrets]
+required = [ "METRO_API_KEY", "JOURNEY_CONFIG", "JOURNEY_SCHEDULE", "COMMUTE_TOKEN" ]
