@@ -73,5 +73,6 @@ export interface MetroSource {
 export interface Env {
   METRO_API_KEY?: string;
   JOURNEY_CONFIG?: string;
+  COMMUTE_TOKEN?: string;
   METRO_SOURCE?: MetroSource;
 }
