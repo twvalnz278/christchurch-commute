@@ -13,6 +13,7 @@ export function parseConfig(raw: string | undefined): JourneyConfig {
   if (!Number.isFinite(config.freshnessSeconds) || (config.freshnessSeconds ?? 0) <= 0) throw new Error("freshnessSeconds must be positive");
   if (!Number.isFinite(config.arrivalMarginMinutes) || (config.arrivalMarginMinutes ?? 0) < 0) throw new Error("arrivalMarginMinutes must be non-negative");
   if (!Number.isFinite(config.walkingBufferMinutes) || (config.walkingBufferMinutes ?? 0) < 0) throw new Error("walkingBufferMinutes must be non-negative");
+  if (!Number.isFinite(config.boardingLeadMinutes) || (config.boardingLeadMinutes ?? 0) < 0) throw new Error("boardingLeadMinutes must be non-negative");
   if (!config.options || config.options.length !== 2) throw new Error("exactly two options are required");
   const origins = new Set<Origin>();
   for (const option of config.options) validateOption(option, origins);
