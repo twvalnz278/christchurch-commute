@@ -3,7 +3,7 @@ import worker from "../src/worker.js";
 const health = await worker.fetch(new Request("https://worker.invalid/health"), {});
 if (health.status !== 200) throw new Error("health endpoint should respond without contacting Metro");
 const healthBody = await health.json() as Record<string, unknown>;
-if (healthBody.productionReady !== false || healthBody.tripUpdates !== "UNVERIFIED/TODO") throw new Error("health must disclose incomplete integrations");
+if (healthBody.productionReady !== false || healthBody.tripUpdates !== "endpoint/parser implemented; production fixture validation pending") throw new Error("health must disclose incomplete integrations");
 console.log("PASS /health reports incomplete integration without secrets");
 
 for (const url of ["https://worker.invalid/commute", "https://worker.invalid/commute?origin=other"]) {
