@@ -12,7 +12,7 @@ export class VerifiedMetroSource implements MetroSource {
     private readonly loadGtfs: GtfsLoader
   ) {}
 
-  async getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number): Promise<JourneyObservation> {
+  async getJourney(option: JourneyOptionConfig, now: Date, walkingBufferMinutes: number, boardingLeadMinutes: number): Promise<JourneyObservation> {
     try {
       const gtfs = await this.loadGtfs();
       const resolvedOption = { ...option, routeId: resolveJourneyRouteId(gtfs, option) };
