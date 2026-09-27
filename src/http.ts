@@ -11,7 +11,7 @@ export function metroHeaders(apiKey: string): Headers {
 }
 
 export async function checkedFetch(url: string, apiKey: string, maxBytes: number): Promise<Uint8Array> {
-  const response = await fetch(url, { headers: metroHeaders(apiKey), redirect: "error", signal: AbortSignal.timeout(20_000) });
+  const response = await fetch(url, { headers: metroHeaders(apiKey), redirect: "manual", signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`Metro request failed with HTTP ${response.status}`);
   const length = Number(response.headers.get("content-length"));
   if (Number.isFinite(length) && length > maxBytes) throw new Error("Metro response exceeds the configured size limit");
