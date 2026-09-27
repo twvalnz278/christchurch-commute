@@ -1,6 +1,6 @@
 import { evaluate } from "../src/evaluate.js";
 import { formatText } from "../src/format.js";
-import type { JourneyCandidate, JourneyConfig, JourneyObservation, Origin } from "../src/types.js";
+import type { JourneyCandidate, JourneyConfig, JourneyObservation } from "../src/types.js";
 
 const now = new Date("2026-09-27T18:00:00.000Z"); // 07:00 Monday NZDT
 const config: JourneyConfig = {
