@@ -13,7 +13,7 @@ The private home street address is never stored in this repository. Production o
 
 The Worker no longer depends on a bus already being visible in GTFS-Realtime at 07:00.
 
-1. A compact `JOURNEY_SCHEDULE` secret is generated locally from Metro's official GTFS Static feed.
+1. A compact v2 `JOURNEY_SCHEDULE` secret is generated locally from Metro's official GTFS Static feed using array encoding to stay safely below Cloudflare's per-secret size limit.
 2. The generator selects only trips that actually serve the configured boarding and alighting stops in order.
 3. It honours GTFS `pickup_type` / `drop_off_type`, so trips that pass a stop without allowing boarding are excluded. This is important for Route 1 express services.
 4. GTFS `calendar.txt` and `calendar_dates.txt` determine whether a trip is active on the local service date.
@@ -89,6 +89,7 @@ The generator:
 - rejects no-pickup/no-drop-off trips;
 - includes only weekday-capable morning services;
 - includes service-calendar exceptions;
+- uses compact v2 array encoding to minimize secret size;
 - refuses output above Cloudflare's 5 KB variable limit.
 
 Upload it without placing its value in shell history:

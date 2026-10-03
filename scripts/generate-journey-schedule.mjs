@@ -14,19 +14,40 @@ const servicesNeeded = new Set();
 const options = config.options.map((option) => buildOption(option));
 const services = [...servicesNeeded].map((serviceId) => buildService(serviceId));
 const schedule = {
-  version: 1,
-  generatedAt: new Date().toISOString(),
-  timeZone: "Pacific/Auckland",
-  options,
-  services
+  v: 2,
+  g: new Date().toISOString(),
+  z: "Pacific/Auckland",
+  o: options.map((option) => [
+    option.origin,
+    option.routeCode,
+    option.routeId,
+    option.directionId,
+    option.boardingStopId,
+    option.alightingStopId,
+    option.trips.map((trip) => [
+      trip.tripId,
+      trip.serviceId,
+      trip.boardSequence,
+      trip.alightSequence,
+      trip.boardSeconds,
+      trip.alightSeconds
+    ])
+  ]),
+  s: services.map((service) => [
+    service.serviceId,
+    service.startDate,
+    service.endDate,
+    service.weekdayMask,
+    service.exceptions ?? {}
+  ])
 };
 const json = JSON.stringify(schedule);
 if (Buffer.byteLength(json, "utf8") > 4_900) {
-  fail(`Generated JOURNEY_SCHEDULE is ${Buffer.byteLength(json, "utf8")} bytes; Cloudflare's per-variable limit is 5 KB. Narrow the morning window before upload.`);
+  fail(`Generated JOURNEY_SCHEDULE is ${Buffer.byteLength(json, "utf8")} bytes; Cloudflare's per-variable limit is 5 KB even after compact encoding.`);
 }
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, json, { mode: 0o600 });
-console.log(`Validated compact JOURNEY_SCHEDULE written to ${output} (${Buffer.byteLength(json, "utf8")} bytes).`);
+console.log(`Validated compact v2 JOURNEY_SCHEDULE written to ${output} (${Buffer.byteLength(json, "utf8")} bytes).`);
 console.log("It contains public Metro route/stop/trip schedule data only; no private home address is copied.");
 
 function buildOption(option) {

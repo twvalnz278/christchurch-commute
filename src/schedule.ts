@@ -31,19 +31,34 @@ export interface ScheduleService {
 }
 
 export interface JourneySchedule {
-  version: 1;
+  version: 1 | 2;
   generatedAt: string;
   timeZone: "Pacific/Auckland";
   options: ScheduleOption[];
   services: ScheduleService[];
 }
 
+type CompactTrip = [string, string, number, number, number, number];
+type CompactOption = [Origin, "27" | "1", string, number, string, string, CompactTrip[]];
+type CompactService = [string, string, string, number, Record<string, 1 | 2>?];
+interface CompactJourneySchedule {
+  v: 2;
+  g: string;
+  z: "Pacific/Auckland";
+  o: CompactOption[];
+  s: CompactService[];
+}
+
 export function parseJourneySchedule(raw: string | undefined, config: JourneyConfig): JourneySchedule {
   if (!raw) throw new Error("JOURNEY_SCHEDULE secret is missing");
   const value: unknown = JSON.parse(raw);
   if (!value || typeof value !== "object") throw new Error("JOURNEY_SCHEDULE must be an object");
-  const schedule = value as Partial<JourneySchedule>;
-  if (schedule.version !== 1) throw new Error("JOURNEY_SCHEDULE version is unsupported");
+
+  const schedule = isCompactSchedule(value)
+    ? expandCompactSchedule(value)
+    : value as Partial<JourneySchedule>;
+
+  if (schedule.version !== 1 && schedule.version !== 2) throw new Error("JOURNEY_SCHEDULE version is unsupported");
   if (schedule.timeZone !== config.timeZone) throw new Error("JOURNEY_SCHEDULE timeZone does not match JOURNEY_CONFIG");
   if (!schedule.generatedAt || Number.isNaN(new Date(schedule.generatedAt).valueOf())) throw new Error("JOURNEY_SCHEDULE generatedAt is invalid");
   if (!Array.isArray(schedule.options) || schedule.options.length !== 2) throw new Error("JOURNEY_SCHEDULE must contain home and gym options");
@@ -125,4 +140,41 @@ function activeServiceIds(schedule: JourneySchedule, serviceDate: string): Set<s
     }
   }
   return active;
+}
+
+function isCompactSchedule(value: unknown): value is CompactJourneySchedule {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<CompactJourneySchedule>;
+  return candidate.v === 2 && Array.isArray(candidate.o) && Array.isArray(candidate.s);
+}
+
+function expandCompactSchedule(value: CompactJourneySchedule): JourneySchedule {
+  return {
+    version: 2,
+    generatedAt: value.g,
+    timeZone: value.z,
+    options: value.o.map((option) => ({
+      origin: option[0],
+      routeCode: option[1],
+      routeId: option[2],
+      directionId: option[3],
+      boardingStopId: option[4],
+      alightingStopId: option[5],
+      trips: option[6].map((trip) => ({
+        tripId: trip[0],
+        serviceId: trip[1],
+        boardSequence: trip[2],
+        alightSequence: trip[3],
+        boardSeconds: trip[4],
+        alightSeconds: trip[5]
+      }))
+    })),
+    services: value.s.map((service) => ({
+      serviceId: service[0],
+      startDate: service[1],
+      endDate: service[2],
+      weekdayMask: service[3],
+      ...(service[4] && Object.keys(service[4]).length ? { exceptions: service[4] } : {})
+    }))
+  };
 }
