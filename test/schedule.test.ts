@@ -17,19 +17,19 @@ const config: JourneyConfig = {
 };
 
 const raw = JSON.stringify({
-  version: 1,
-  generatedAt: "2026-09-27T01:00:00.000Z",
-  timeZone: "Pacific/Auckland",
-  options: [
-    { origin: "home", routeCode: "27", routeId: "r27-current", directionId: 0, boardingStopId: "board", alightingStopId: "alight", trips: [
-      { tripId: "h1", serviceId: "weekday", boardSequence: 3, alightSequence: 10, boardSeconds: 7 * 3600 + 30 * 60, alightSeconds: 8 * 3600 }
-    ]},
-    { origin: "gym", routeCode: "1", routeId: "r1-current", directionId: 0, boardingStopId: "gboard", alightingStopId: "alight", trips: [
-      { tripId: "g1", serviceId: "weekday", boardSequence: 4, alightSequence: 20, boardSeconds: 7 * 3600 + 40 * 60, alightSeconds: 8 * 3600 + 10 * 60 }
-    ]}
+  v: 2,
+  g: "2026-09-27T01:00:00.000Z",
+  z: "Pacific/Auckland",
+  o: [
+    ["home", "27", "r27-current", 0, "board", "alight", [
+      ["h1", "weekday", 3, 10, 7 * 3600 + 30 * 60, 8 * 3600]
+    ]],
+    ["gym", "1", "r1-current", 0, "gboard", "alight", [
+      ["g1", "weekday", 4, 20, 7 * 3600 + 40 * 60, 8 * 3600 + 10 * 60]
+    ]]
   ],
-  services: [
-    { serviceId: "weekday", startDate: "20260101", endDate: "20261231", weekdayMask: 31, exceptions: { "20260928": 1 } }
+  s: [
+    ["weekday", "20260101", "20261231", 31, { "20260928": 1 }]
   ]
 });
 
